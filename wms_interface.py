@@ -78,8 +78,11 @@ class WildixInterface:
         current_weekday = now.isoweekday()  # 1=Mon, 7=Sun
 
         for item in timetable.get('items', []):
+            # Normalize: if either side of a pair is 0, treat both as 0 (wildcard)
             from_dow = item['from'].get('dayOfWeek', 0)
             to_dow = item['to'].get('dayOfWeek', 0)
+            if from_dow == 0 or to_dow == 0:
+                from_dow = to_dow = 0
 
             time_from = datetime.time.fromisoformat(item['time']['from'])
             time_to = datetime.time.fromisoformat(item['time']['to'])
@@ -93,6 +96,10 @@ class WildixInterface:
                 month = item['month']
                 from_day = item['from']['day']
                 to_day = item['to']['day']
+
+                # Normalize day pair: if either is 0, treat both as 0 (wildcard)
+                if from_day == 0 or to_day == 0:
+                    from_day = to_day = 0
 
                 if from_day != 0 and to_day < from_day:
                     # Cross-month range: build actual dates and check directly
