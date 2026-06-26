@@ -52,7 +52,7 @@ Then use a condition on `${TT_STATUS}` to branch the dialplan accordingly.
 Debug script for dialplan to be used as custom application:
 
 ```
-noop(TT_STATUS=${TT_STATUS})
+noop(${CURL(${HOSTNAME}/timetable_status/timetable.php?wms_hostname=${HOSTNAME}&wms_app_token=${WMS_APP_TOKEN}&time_table_id=<id>)})
 ```
 
 ### Dialplan test example
