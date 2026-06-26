@@ -23,12 +23,16 @@ class WildixInterface:
 
     def get_timetable(self, time_table_id: str) -> dict:
         resp = requests.get(
-            url=f'{self.wms_hostname}/api/v1/Dialplan/timeTables/{time_table_id}/',
+            url=f'{self.wms_hostname}/api/v1/Dialplan/timeTables/',
             params={'responseType': 'json'},
             headers=self._headers
         )
         resp.raise_for_status()
-        return resp.json()['result']
+        records = resp.json()['result']['records']
+        for record in records:
+            if str(record['id']) == str(time_table_id):
+                return record
+        raise ValueError(f'Timetable ID {time_table_id} not found')
 
     def check_timetable_status(self, time_table_id: str) -> int:
         """
