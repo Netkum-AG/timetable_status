@@ -15,11 +15,7 @@ The result depends on the timetable state:
 
 From WMS console, logged as root.
 
->apt-get update && apt-get install git -y \
-&& cd /var/www/ \
-&& git clone https://github.com/Netkum-AG/timetable_status.git \
-&& cd timetable_status \
-&& chmod +x main.py
+>apt-get update && apt-get install git -y && cd /var/www/ && git clone https://github.com/Netkum-AG/timetable_status.git && cd timetable_status && chmod +x main.py
 
 ### Configuration
 
@@ -65,10 +61,7 @@ Call 2228 to get the status from timetable with id 8.
 
 From WMS console, logged as root.
 
->cd /var/www/timetable_status \
-&& git reset --hard \
-&& git pull \
-&& chmod +x main.py
+>cd /var/www/timetable_status && git reset --hard && git pull && chmod +x main.py
 
 ### Bug report & support
 Please open an issue on GitHub with as many details as possible and screenshot from the problem.  

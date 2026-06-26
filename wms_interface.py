@@ -88,26 +88,33 @@ class WildixInterface:
                 continue
 
             if from_dow == 0:
-                # Calendar-based range — skip placeholder items (year or month == 0)
+                # Each field: 0 = wildcard (any)
                 year = item['year']
                 month = item['month']
-                if year == 0 or month == 0:
-                    continue
+                from_day = item['from']['day']
+                to_day = item['to']['day']
 
-                start_date = datetime.date(year, month, item['from']['day'])
-
-                # If to.day < from.day, the range wraps into the next month
-                end_day = item['to']['day']
-                if end_day < item['from']['day']:
+                if from_day != 0 and to_day < from_day:
+                    # Cross-month range: build actual dates and check directly
+                    ref_year = year if year != 0 else current_date.year
+                    ref_month = month if month != 0 else current_date.month
+                    start_date = datetime.date(ref_year, ref_month, from_day)
                     end_date = (
-                        datetime.date(year, month, 1)
+                        datetime.date(ref_year, ref_month, 1)
                         + datetime.timedelta(days=32)
-                    ).replace(day=end_day)
+                    ).replace(day=to_day)
+                    if not (start_date <= current_date <= end_date):
+                        continue
                 else:
-                    end_date = datetime.date(year, month, end_day)
+                    # Normal range: check each field independently (0 = wildcard)
+                    if year != 0 and current_date.year != year:
+                        continue
+                    if month != 0 and current_date.month != month:
+                        continue
+                    if from_day != 0 and not (from_day <= current_date.day <= to_day):
+                        continue
 
-                if start_date <= current_date <= end_date:
-                    return 1
+                return 1
 
             else:
                 # Weekly recurring (ISO weekday: 1=Mon, 7=Sun)
