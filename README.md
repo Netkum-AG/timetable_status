@@ -55,6 +55,12 @@ Debug script for dialplan to be used as custom application:
 noop(TT_STATUS=${TT_STATUS})
 ```
 
+### Dialplan test example
+
+Call 2228 to get the status from timetable with id 8.
+
+![Dialplan test example](doc/img.png)
+
 ### Update
 
 From WMS console, logged as root.

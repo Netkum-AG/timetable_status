@@ -34,7 +34,17 @@ class WildixInterface:
                 return record
         raise ValueError(f'Timetable ID {time_table_id} not found')
 
-    def check_timetable_status(self, time_table_id: str) -> int:
+    @staticmethod
+    def _in_time_range(time_from: datetime.time, time_to: datetime.time, current: datetime.time) -> bool:
+        """
+        time.to = "00:00:00" means end of day (midnight of next day).
+        Any time >= time_from matches in that case.
+        """
+        if time_to == datetime.time(0, 0, 0):
+            return current >= time_from
+        return time_from <= current <= time_to
+
+    def check_timetable_status(self, time_table_id: str, now: datetime.datetime = None) -> int:
         """
         Returns 1 if the timetable is active, 0 otherwise.
 
@@ -44,8 +54,13 @@ class WildixInterface:
           - STATE_CHECK_TIME (1)     → check items
 
         Item types:
-          - dayOfWeek == 0 → calendar range (specific dates, same month/year)
+          - dayOfWeek == 0 → calendar range (specific dates)
           - dayOfWeek != 0 → weekly recurring (ISO weekday: 1=Mon, 7=Sun)
+
+        Special cases:
+          - time.to == "00:00:00" means end of day (midnight of next day)
+          - Calendar items with year == 0 are placeholder/empty items, skipped
+          - Calendar ranges where to.day < from.day wrap into the next month
         """
         timetable = self.get_timetable(time_table_id)
         state = timetable.get('state')
@@ -55,8 +70,9 @@ class WildixInterface:
         if state == self.STATE_FORCE_INACTIVE:
             return 0
 
-        # STATE_CHECK_TIME: evaluate each item
-        now = datetime.datetime.now()
+        if now is None:
+            now = datetime.datetime.now()
+
         current_date = now.date()
         current_time = now.time()
         current_weekday = now.isoweekday()  # 1=Mon, 7=Sun
@@ -65,20 +81,22 @@ class WildixInterface:
             from_dow = item['from'].get('dayOfWeek', 0)
             to_dow = item['to'].get('dayOfWeek', 0)
 
-            # Parse time range (format: HH:MM:SS)
             time_from = datetime.time.fromisoformat(item['time']['from'])
             time_to = datetime.time.fromisoformat(item['time']['to'])
 
-            if not (time_from <= current_time <= time_to):
+            if not self._in_time_range(time_from, time_to, current_time):
                 continue
 
             if from_dow == 0:
-                # Calendar-based range (specific dates within same month/year)
+                # Calendar-based range — skip placeholder items (year or month == 0)
                 year = item['year']
                 month = item['month']
+                if year == 0 or month == 0:
+                    continue
+
                 start_date = datetime.date(year, month, item['from']['day'])
 
-                # If end day < start day, the range wraps into the next month
+                # If to.day < from.day, the range wraps into the next month
                 end_day = item['to']['day']
                 if end_day < item['from']['day']:
                     end_date = (
@@ -92,7 +110,7 @@ class WildixInterface:
                     return 1
 
             else:
-                # Weekly recurring range (ISO weekday: 1=Mon, 7=Sun)
+                # Weekly recurring (ISO weekday: 1=Mon, 7=Sun)
                 if from_dow <= to_dow:
                     in_range = from_dow <= current_weekday <= to_dow
                 else:
